@@ -1,0 +1,28 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>org.arcot.APIWiz</id>
+
+    <!-- Public plugin name should be written in Title Case.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>APIWiz</name>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor email="gouthamarcot@gmail.com" url="http://arcodgoutham.com">Your Name</vendor>
+
+    <description>
+        A global plugin for managing API requests, similar to Postman.
+    </description>
+
+    <depends>com.intellij.modules.python</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceImplementation="org.arcot.apiwiz.services.HttpService"/>
+        <applicationService serviceImplementation="org.arcot.apiwiz.services.SwaggerService"/>
+        <toolWindow id="APIWiz" anchor="right" factoryClass="org.arcot.apiwiz.toolWindow.HttpToolWindowFactory"/>
+    </extensions>
+
+    <actions>
+        <action id="APIWiz.Action" class="org.arcot.apiwiz.actions.HttpAction" text="Open APIWiz" description="Open the APIWiz tool window"/>
+    </actions>
+</idea-plugin>
