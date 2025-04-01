@@ -1,5 +1,9 @@
 package org.arcot.apiwiz.toolWindow;
 
+import com.intellij.execution.ExecutionListener;
+import com.intellij.execution.ExecutionManager;
+import com.intellij.execution.process.ProcessHandler;
+import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
@@ -29,8 +33,13 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 public class HttpToolWindowFactory implements ToolWindowFactory {
+    private JTextArea responseArea;
+    private JTextField urlField;
+    private Project currentProject;
+
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
+        this.currentProject = project;
         // Create main panel with BorderLayout
         JPanel mainPanel = new JPanel(new BorderLayout());
         
@@ -41,7 +50,7 @@ public class HttpToolWindowFactory implements ToolWindowFactory {
         gbc.insets = new Insets(5, 5, 5, 5);
         
         // URL input
-        JTextField urlField = new JTextField();
+        urlField = new JTextField();
         JComboBox<String> methodCombo = new JComboBox<>(new String[]{"GET", "POST", "PUT", "DELETE"});
         
         // Headers panel
@@ -57,10 +66,10 @@ public class HttpToolWindowFactory implements ToolWindowFactory {
         bodyPanel.add(new JScrollPane(bodyArea), BorderLayout.CENTER);
         
         // Response area
+        responseArea = new JTextArea(12, 40);
+        responseArea.setEditable(false);
         JPanel responsePanel = new JPanel(new BorderLayout());
         responsePanel.setBorder(BorderFactory.createTitledBorder("Response"));
-        JTextArea responseArea = new JTextArea(12, 40);
-        responseArea.setEditable(false);
         responsePanel.add(new JScrollPane(responseArea), BorderLayout.CENTER);
         
         // Send button
@@ -128,5 +137,16 @@ public class HttpToolWindowFactory implements ToolWindowFactory {
         ContentFactory contentFactory = ContentFactory.getInstance();
         Content content = contentFactory.createContent(mainPanel, "", false);
         toolWindow.getContentManager().addContent(content);
+
+        // Add Flask execution listener
+        project.getMessageBus().connect().subscribe(ExecutionManager.EXECUTION_TOPIC, 
+            new ExecutionListener() {
+                @Override
+                public void processStarted(@NotNull String executorId, 
+                                         @NotNull ExecutionEnvironment env, 
+                                         @NotNull ProcessHandler handler) {
+                    handler.addProcessListener(new FlaskProcessListener(responseArea, urlField));
+                }
+            });
     }
 } 

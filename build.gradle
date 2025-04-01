@@ -17,6 +17,21 @@ intellij {
 patchPluginXml {
     sinceBuild = '233'
     untilBuild = '233.*'
+    pluginDescription = """
+        APIWiz - A tool for automatically detecting and testing Flask APIs.
+        Features:
+        - Automatic Flask application detection
+        - API route discovery
+        - HTTP request testing
+        """
+    changeNotes = """
+        <ul>
+            <li>Initial release</li>
+            <li>Flask API detection</li>
+            <li>HTTP request testing</li>
+        </ul>
+        """
+    version = '1.0.0'
 }
 
 buildSearchableOptions {
@@ -24,7 +39,7 @@ buildSearchableOptions {
 }
 
 group 'org.arcot'
-version '1.0-SNAPSHOT'
+version '1.0.0'
 
 repositories {
     mavenCentral()
@@ -38,4 +53,9 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+publishPlugin {
+    token = "perm-Z291dGhhbV9hcmNvdA==.OTItMTIxNDU=.xnvedKKgDN0LIkOalEVWAtYH6erywH"  // Your marketplace token
+    channels = ['default']  // or ['eap'] for early access
 } 

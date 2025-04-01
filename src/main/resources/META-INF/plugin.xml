@@ -8,23 +8,20 @@
     <name>APIWiz</name>
 
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
-    <vendor email="gouthamarcot@gmail.com" url="http://arcodgoutham.com">Goutham Arcot</vendor>
+    <vendor email="your.email@example.com" url="https://your-website.com">Your Name</vendor>
 
-    <description>
-        A powerful API testing tool integrated into your IDE. Features include:
-        - Send HTTP requests with custom headers and body
-        - Import API definitions from Swagger/OpenAPI
-        - Scan Flask APIs automatically
-        - View response headers and body
-        - Save and organize API endpoints
-    </description>
+    <description><![CDATA[
+        APIWiz - A tool for automatically detecting and testing Flask APIs.
+    ]]></description>
 
+    <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.python</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <applicationService serviceImplementation="org.arcot.apiwiz.services.HttpService"/>
         <applicationService serviceImplementation="org.arcot.apiwiz.services.SwaggerService"/>
         <toolWindow id="APIWiz" anchor="right" factoryClass="org.arcot.apiwiz.toolWindow.HttpToolWindowFactory"/>
+        <pyScriptRunner implementation="org.arcot.apiwiz.python.FlaskRouteScriptRunner"/>
     </extensions>
 
     <actions>
