@@ -1,0 +1,41 @@
+plugins {
+    id 'java'
+    id 'org.jetbrains.intellij' version '1.17.0'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+intellij {
+    version = '2023.3'
+    type = 'PY'  // Use PY for PyCharm
+    downloadSources = true
+}
+
+patchPluginXml {
+    sinceBuild = '233'
+    untilBuild = '233.*'
+}
+
+buildSearchableOptions {
+    enabled = false
+}
+
+group 'org.arcot'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    implementation 'com.squareup.okhttp3:okhttp:4.9.1'
+}
+
+test {
+    useJUnitPlatform()
+} 

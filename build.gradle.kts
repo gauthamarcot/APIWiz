@@ -1,4 +1,4 @@
- plugins {
+plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "1.9.23"
     id("org.jetbrains.intellij") version "1.17.3"
@@ -14,13 +14,12 @@ repositories {
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
 intellij {
-    version.set("2024.x")
-    type.set("PY") // Target IDE Platform
-    type.set("PC")
-    type.set("IC")
+    version.set("2023.3")
+    type.set("PY") // Target PyCharm Professional Edition
 
-    plugins.set(listOf(/* Plugin Dependencies */))
-
+    plugins.set(listOf(
+        "python"
+    ))
 }
 
 tasks {
@@ -31,6 +30,10 @@ tasks {
     }
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions.jvmTarget = "17"
+    }
+
+    buildSearchableOptions {
+        enabled = false
     }
 
     patchPluginXml {
@@ -47,4 +50,10 @@ tasks {
     publishPlugin {
         token.set(System.getenv("PUBLISH_TOKEN"))
     }
+}
+
+dependencies {
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
+    implementation("com.fasterxml.jackson.core:jackson-core:2.16.1")
+    implementation("com.fasterxml.jackson.core:jackson-annotations:2.16.1")
 }

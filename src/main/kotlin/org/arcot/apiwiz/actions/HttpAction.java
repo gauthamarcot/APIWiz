@@ -1,6 +1,5 @@
 package org.arcot.apiwiz.actions;
 
-
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
@@ -14,7 +13,7 @@ public class HttpAction extends AnAction {
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project project = e.getProject();
         if (project != null) {
-            ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Postman Clone");
+            ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow("APIWiz");
             if (toolWindow != null) {
                 toolWindow.show(null);
             }
