@@ -7,8 +7,7 @@
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
     <name>APIWiz</name>
 
-    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
-    <vendor email="your.email@example.com" url="https://your-website.com">Your Name</vendor>
+    <vendor email="gouthamarcot@gmail.com" url="#">Goutham Arcod</vendor>
 
     <description><![CDATA[
         APIWiz - Flask API Detection and Testing Tool
