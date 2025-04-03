@@ -41,9 +41,8 @@ public class HttpToolWindowFactory implements ToolWindowFactory {
 
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
-        // Main split pane to divide collections and request/response
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setDividerLocation(200); // Width of collection panel
+        splitPane.setDividerLocation(250);
 
         // Left side - Collections
         JPanel collectionsPanel = createCollectionsPanel();
@@ -53,33 +52,144 @@ public class HttpToolWindowFactory implements ToolWindowFactory {
         JPanel mainPanel = createRequestResponsePanel();
         splitPane.setRightComponent(mainPanel);
 
-        // Use ServiceEventListener instead of ExecutionListener
-        ApplicationManager.getApplication().getMessageBus().connect().subscribe(
+        // Add service listener
+        project.getMessageBus().connect().subscribe(
             ServiceEventListener.TOPIC,
-            new FlaskServiceListener(project, responseArea, urlField, collectionTree)
+            new ApiServiceListener(project, responseArea, urlField, collectionTree)
         );
 
-        // Add to tool window
         Content content = ContentFactory.getInstance().createContent(splitPane, "", false);
         toolWindow.getContentManager().addContent(content);
     }
 
     private JPanel createCollectionsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Collections"));
+        panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
-        // Create tree for collections
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode("APIs");
+        // Collection toolbar
+        JPanel toolbarPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton newCollectionBtn = new JButton("New Collection");
+        JButton importBtn = new JButton("Import");
+        JButton exportBtn = new JButton("Export");
+        
+        toolbarPanel.add(newCollectionBtn);
+        toolbarPanel.add(importBtn);
+        toolbarPanel.add(exportBtn);
+
+        // Tree with root node
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Collections");
         collectionTree = new JTree(root);
         
-        // Add some default categories
+        // Add default categories
         DefaultMutableTreeNode flaskNode = new DefaultMutableTreeNode("Flask APIs");
+        DefaultMutableTreeNode fastApiNode = new DefaultMutableTreeNode("FastAPI APIs");
         root.add(flaskNode);
+        root.add(fastApiNode);
 
-        JScrollPane scrollPane = new JScrollPane(collectionTree);
-        panel.add(scrollPane, BorderLayout.CENTER);
+        // Tree popup menu
+        JPopupMenu popupMenu = new JPopupMenu();
+        JMenuItem addRequest = new JMenuItem("Add Request");
+        JMenuItem addFolder = new JMenuItem("Add Folder");
+        JMenuItem rename = new JMenuItem("Rename");
+        JMenuItem delete = new JMenuItem("Delete");
+        
+        popupMenu.add(addRequest);
+        popupMenu.add(addFolder);
+        popupMenu.add(rename);
+        popupMenu.add(delete);
+
+        collectionTree.setComponentPopupMenu(popupMenu);
+
+        // Add action listeners
+        newCollectionBtn.addActionListener(e -> createNewCollection());
+        importBtn.addActionListener(e -> importCollection());
+        exportBtn.addActionListener(e -> exportCollection());
+        
+        addRequest.addActionListener(e -> addRequestToCollection());
+        addFolder.addActionListener(e -> addFolderToCollection());
+        rename.addActionListener(e -> renameCollectionItem());
+        delete.addActionListener(e -> deleteCollectionItem());
+
+        panel.add(toolbarPanel, BorderLayout.NORTH);
+        panel.add(new JScrollPane(collectionTree), BorderLayout.CENTER);
 
         return panel;
+    }
+
+    private void createNewCollection() {
+        String name = JOptionPane.showInputDialog("Enter collection name:");
+        if (name != null && !name.trim().isEmpty()) {
+            DefaultTreeModel model = (DefaultTreeModel) collectionTree.getModel();
+            DefaultMutableTreeNode root = (DefaultMutableTreeNode) model.getRoot();
+            DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(name);
+            root.add(newNode);
+            model.reload();
+        }
+    }
+
+    private void importCollection() {
+        // TODO: Implement collection import from Postman/other formats
+        JFileChooser fileChooser = new JFileChooser();
+        if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+            // Handle import
+        }
+    }
+
+    private void exportCollection() {
+        // TODO: Implement collection export
+        JFileChooser fileChooser = new JFileChooser();
+        if (fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+            // Handle export
+        }
+    }
+
+    private void addRequestToCollection() {
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode) 
+            collectionTree.getLastSelectedPathComponent();
+        if (node != null) {
+            String name = JOptionPane.showInputDialog("Enter request name:");
+            if (name != null && !name.trim().isEmpty()) {
+                DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(
+                    new RequestNode(name, "GET", "")
+                );
+                node.add(newNode);
+                ((DefaultTreeModel) collectionTree.getModel()).reload(node);
+            }
+        }
+    }
+
+    private void addFolderToCollection() {
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode) 
+            collectionTree.getLastSelectedPathComponent();
+        if (node != null) {
+            String name = JOptionPane.showInputDialog("Enter folder name:");
+            if (name != null && !name.trim().isEmpty()) {
+                DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(name);
+                node.add(newNode);
+                ((DefaultTreeModel) collectionTree.getModel()).reload(node);
+            }
+        }
+    }
+
+    private void renameCollectionItem() {
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode) 
+            collectionTree.getLastSelectedPathComponent();
+        if (node != null) {
+            String name = JOptionPane.showInputDialog("Enter new name:", 
+                node.getUserObject().toString());
+            if (name != null && !name.trim().isEmpty()) {
+                node.setUserObject(name);
+                ((DefaultTreeModel) collectionTree.getModel()).nodeChanged(node);
+            }
+        }
+    }
+
+    private void deleteCollectionItem() {
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode) 
+            collectionTree.getLastSelectedPathComponent();
+        if (node != null && node.getParent() != null) {
+            ((DefaultTreeModel) collectionTree.getModel()).removeNodeFromParent(node);
+        }
     }
 
     private JPanel createRequestResponsePanel() {
