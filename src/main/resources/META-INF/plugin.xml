@@ -35,4 +35,9 @@
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
     </actions>
+
+    <applicationListeners>
+        <listener class="org.arcot.apiwiz.toolWindow.FlaskServiceListener"
+                 topic="com.intellij.execution.services.ServiceEventListener"/>
+    </applicationListeners>
 </idea-plugin>

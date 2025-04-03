@@ -1,9 +1,7 @@
 package org.arcot.apiwiz.toolWindow;
 
-import com.intellij.execution.ExecutionListener;
-import com.intellij.execution.ExecutionManager;
-import com.intellij.execution.process.ProcessHandler;
-import com.intellij.execution.runners.ExecutionEnvironment;
+import com.intellij.execution.services.ServiceEventListener;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
@@ -55,10 +53,10 @@ public class HttpToolWindowFactory implements ToolWindowFactory {
         JPanel mainPanel = createRequestResponsePanel();
         splitPane.setRightComponent(mainPanel);
 
-        // Add Flask process listener
-        project.getMessageBus().connect().subscribe(
-            ExecutionManager.EXECUTION_TOPIC,
-            new FlaskExecutionListener(responseArea, urlField, collectionTree)
+        // Use ServiceEventListener instead of ExecutionListener
+        ApplicationManager.getApplication().getMessageBus().connect().subscribe(
+            ServiceEventListener.TOPIC,
+            new FlaskServiceListener(project, responseArea, urlField, collectionTree)
         );
 
         // Add to tool window
