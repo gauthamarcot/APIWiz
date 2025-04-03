@@ -25,6 +25,7 @@ import javax.swing.JScrollPane;
 import javax.swing.BorderFactory;
 
 import javax.swing.*;
+import javax.swing.tree.*;
 import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
@@ -35,118 +36,123 @@ import java.net.http.HttpResponse;
 public class HttpToolWindowFactory implements ToolWindowFactory {
     private JTextArea responseArea;
     private JTextField urlField;
-    private Project currentProject;
+    private JComboBox<String> methodCombo;
+    private JTextArea requestBodyArea;
+    private JTextArea headersArea;
+    private JTree collectionTree;
 
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
-        this.currentProject = project;
-        // Create main panel with BorderLayout
-        JPanel mainPanel = new JPanel(new BorderLayout());
+        // Main split pane to divide collections and request/response
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        splitPane.setDividerLocation(200); // Width of collection panel
+
+        // Left side - Collections
+        JPanel collectionsPanel = createCollectionsPanel();
+        splitPane.setLeftComponent(collectionsPanel);
+
+        // Right side - Request/Response
+        JPanel mainPanel = createRequestResponsePanel();
+        splitPane.setRightComponent(mainPanel);
+
+        // Add Flask process listener
+        project.getMessageBus().connect().subscribe(
+            ExecutionManager.EXECUTION_TOPIC,
+            new FlaskExecutionListener(responseArea, urlField, collectionTree)
+        );
+
+        // Add to tool window
+        Content content = ContentFactory.getInstance().createContent(splitPane, "", false);
+        toolWindow.getContentManager().addContent(content);
+    }
+
+    private JPanel createCollectionsPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("Collections"));
+
+        // Create tree for collections
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("APIs");
+        collectionTree = new JTree(root);
         
-        // Create request panel
-        JPanel requestPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(5, 5, 5, 5);
+        // Add some default categories
+        DefaultMutableTreeNode flaskNode = new DefaultMutableTreeNode("Flask APIs");
+        root.add(flaskNode);
+
+        JScrollPane scrollPane = new JScrollPane(collectionTree);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    private JPanel createRequestResponsePanel() {
+        JPanel mainPanel = new JPanel(new BorderLayout(5, 5));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Top panel for URL and method
+        JPanel topPanel = new JPanel(new BorderLayout(5, 0));
         
-        // URL input
+        // Method combo and URL in one panel
+        JPanel urlMethodPanel = new JPanel(new BorderLayout(5, 0));
+        methodCombo = new JComboBox<>(new String[]{"GET", "POST", "PUT", "DELETE"});
+        methodCombo.setPreferredSize(new Dimension(100, methodCombo.getPreferredSize().height));
         urlField = new JTextField();
-        JComboBox<String> methodCombo = new JComboBox<>(new String[]{"GET", "POST", "PUT", "DELETE"});
+        urlMethodPanel.add(methodCombo, BorderLayout.WEST);
+        urlMethodPanel.add(urlField, BorderLayout.CENTER);
+        
+        // Send button
+        JButton sendButton = new JButton("Send");
+        sendButton.setPreferredSize(new Dimension(70, sendButton.getPreferredSize().height));
+        
+        // Combine URL/method and send button
+        topPanel.add(urlMethodPanel, BorderLayout.CENTER);
+        topPanel.add(sendButton, BorderLayout.EAST);
+
+        // Center panel for headers and body
+        JPanel centerPanel = new JPanel(new GridLayout(2, 1, 0, 5));
         
         // Headers panel
         JPanel headersPanel = new JPanel(new BorderLayout());
         headersPanel.setBorder(BorderFactory.createTitledBorder("Headers"));
-        JTextArea headersArea = new JTextArea(4, 40);
+        headersArea = new JTextArea(4, 40);
         headersPanel.add(new JScrollPane(headersArea), BorderLayout.CENTER);
         
-        // Request body
+        // Request body panel
         JPanel bodyPanel = new JPanel(new BorderLayout());
         bodyPanel.setBorder(BorderFactory.createTitledBorder("Request Body"));
-        JTextArea bodyArea = new JTextArea(8, 40);
-        bodyPanel.add(new JScrollPane(bodyArea), BorderLayout.CENTER);
+        requestBodyArea = new JTextArea(4, 40);
+        bodyPanel.add(new JScrollPane(requestBodyArea), BorderLayout.CENTER);
         
-        // Response area
-        responseArea = new JTextArea(12, 40);
-        responseArea.setEditable(false);
+        centerPanel.add(headersPanel);
+        centerPanel.add(bodyPanel);
+
+        // Response panel
         JPanel responsePanel = new JPanel(new BorderLayout());
         responsePanel.setBorder(BorderFactory.createTitledBorder("Response"));
+        responseArea = new JTextArea(8, 40);
+        responseArea.setEditable(false);
         responsePanel.add(new JScrollPane(responseArea), BorderLayout.CENTER);
-        
-        // Send button
-        JButton sendButton = new JButton("Send Request");
-        sendButton.addActionListener(e -> {
-            try {
-                // Create HTTP client
-                HttpClient client = HttpClient.newHttpClient();
-                
-                // Build the request
-                HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-                    .uri(URI.create(urlField.getText()))
-                    .method(methodCombo.getSelectedItem().toString(), 
-                           bodyArea.getText().isEmpty() ? 
-                           HttpRequest.BodyPublishers.noBody() : 
-                           HttpRequest.BodyPublishers.ofString(bodyArea.getText()));
 
-                // Add headers if present
-                if (!headersArea.getText().isEmpty()) {
-                    for (String headerLine : headersArea.getText().split("\n")) {
-                        if (headerLine.contains(":")) {
-                            String[] parts = headerLine.split(":", 2);
-                            requestBuilder.header(parts[0].trim(), parts[1].trim());
-                        }
-                    }
-                }
-
-                // Send request
-                HttpResponse<String> response = client.send(requestBuilder.build(),
-                    HttpResponse.BodyHandlers.ofString());
-
-                // Show response
-                StringBuilder responseText = new StringBuilder();
-                responseText.append("Status Code: ").append(response.statusCode()).append("\n\n");
-                responseText.append("Headers:\n");
-                response.headers().map().forEach((k, v) -> 
-                    responseText.append(k).append(": ").append(v).append("\n"));
-                responseText.append("\nBody:\n").append(response.body());
-
-                responseArea.setText(responseText.toString());
-
-            } catch (Exception ex) {
-                responseArea.setText("Error making request:\n" + ex.getMessage());
-            }
-        });
-        
-        // Add components to request panel
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 0.2;
-        requestPanel.add(methodCombo, gbc);
-        
-        gbc.gridx = 1;
-        gbc.weightx = 0.8;
-        requestPanel.add(urlField, gbc);
-        
-        // Add all panels to main panel
-        mainPanel.add(requestPanel, BorderLayout.NORTH);
-        mainPanel.add(headersPanel, BorderLayout.CENTER);
-        mainPanel.add(bodyPanel, BorderLayout.CENTER);
-        mainPanel.add(sendButton, BorderLayout.CENTER);
+        // Add all components
+        mainPanel.add(topPanel, BorderLayout.NORTH);
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
         mainPanel.add(responsePanel, BorderLayout.SOUTH);
-        
-        // Add to tool window
-        ContentFactory contentFactory = ContentFactory.getInstance();
-        Content content = contentFactory.createContent(mainPanel, "", false);
-        toolWindow.getContentManager().addContent(content);
 
-        // Add Flask execution listener
-        project.getMessageBus().connect().subscribe(ExecutionManager.EXECUTION_TOPIC, 
-            new ExecutionListener() {
-                @Override
-                public void processStarted(@NotNull String executorId, 
-                                         @NotNull ExecutionEnvironment env, 
-                                         @NotNull ProcessHandler handler) {
-                    handler.addProcessListener(new FlaskProcessListener(responseArea, urlField));
-                }
-            });
+        // Add action listener to send button
+        sendButton.addActionListener(e -> sendRequest());
+
+        return mainPanel;
+    }
+
+    private void sendRequest() {
+        try {
+            String url = urlField.getText();
+            String method = (String) methodCombo.getSelectedItem();
+            String headers = headersArea.getText();
+            String body = requestBodyArea.getText();
+
+            HttpRequestSender.sendRequest(url, method, headers, body, responseArea);
+        } catch (Exception e) {
+            responseArea.setText("Error sending request: " + e.getMessage());
+        }
     }
 } 
